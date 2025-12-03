@@ -146,8 +146,8 @@ async def process_individual_ticket(ticket_id: str):
         # Stage 1: Category Check
         if current_stage < 1:
             await update_stage_progress(ticket_id, 1, "in-progress", "Agent: Checking category...")
-            # Call real agent
-            result = orch.categorizer.invoke(ticket_context)
+            # Call real agent (non-blocking)
+            result = await asyncio.to_thread(orch.categorizer.invoke, ticket_context)
             if result.tickets:
                 ticket_obj = result.tickets[0]
                 current_tickets[ticket_id]["category"] = ticket_obj.category
@@ -161,7 +161,7 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 2:
             await update_stage_progress(ticket_id, 2, "in-progress", "Agent: Calculating SLA...")
             ticket_context.tickets = [ticket_obj]
-            result = orch.sla.invoke(ticket_context)
+            result = await asyncio.to_thread(orch.sla.invoke, ticket_context)
             if result.tickets:
                 ticket_obj = result.tickets[0]
                 current_tickets[ticket_id]["slaDeadline"] = ticket_obj.sla_deadline
@@ -173,7 +173,7 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 3:
             await update_stage_progress(ticket_id, 3, "in-progress", "Agent: Fetching ownership...")
             ticket_context.tickets = [ticket_obj]
-            result = orch.ownership.invoke(ticket_context)
+            result = await asyncio.to_thread(orch.ownership.invoke, ticket_context)
             if result.tickets:
                 ticket_obj = result.tickets[0]
                 current_tickets[ticket_id]["lobOwner"] = ticket_obj.lob_owner
@@ -185,7 +185,7 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 4:
             await update_stage_progress(ticket_id, 4, "in-progress", "Agent: Verifying app owner...")
             ticket_context.tickets = [ticket_obj]
-            result = orch.app_space_checker.invoke(ticket_context)
+            result = await asyncio.to_thread(orch.app_space_checker.invoke, ticket_context)
             if result.tickets:
                 ticket_obj = result.tickets[0]
                 await update_stage_progress(ticket_id, 4, "completed", "App owner verified")
@@ -198,8 +198,8 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 5:
             await update_stage_progress(ticket_id, 5, "in-progress", "Agent: Preparing evidence emails...")
             ticket_context.tickets = [ticket_obj]
-            # Call agent to generate emails but don't send yet
-            orch.evidence.invoke(ticket_context, send=False)
+            # Call agent to generate emails but don't send yet (non-blocking)
+            await asyncio.to_thread(orch.evidence.invoke, ticket_context, send=False)
             
             # Mark as waiting for review
             current_tickets[ticket_id]["waitingForReview"] = True
@@ -215,7 +215,7 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 6:
             await update_stage_progress(ticket_id, 6, "in-progress", "Agent: Closing ticket...")
             ticket_context.tickets = [ticket_obj]
-            result = orch.closer.invoke(ticket_context)
+            result = await asyncio.to_thread(orch.closer.invoke, ticket_context)
             if result.tickets:
                 ticket_obj = result.tickets[0]
                 await update_stage_progress(ticket_id, 6, "completed", "Ticket closed")
@@ -225,7 +225,7 @@ async def process_individual_ticket(ticket_id: str):
         if current_stage < 7:
             await update_stage_progress(ticket_id, 7, "in-progress", "Agent: Logging results...")
             ticket_context.tickets = [ticket_obj]
-            orch.logger.invoke(ticket_context)
+            await asyncio.to_thread(orch.logger.invoke, ticket_context)
             await update_stage_progress(ticket_id, 7, "completed", "Logged successfully")
             current_tickets[ticket_id]["status"] = "completed"
             
@@ -248,8 +248,8 @@ async def load_initial_tickets():
         print("Fetching initial tickets...")
         orch = get_orchestrator()
         
-        # Stage 1: Fetch tickets
-        tickets_response = orch.fetcher.invoke()
+        # Stage 1: Fetch tickets (non-blocking)
+        tickets_response = await asyncio.to_thread(orch.fetcher.invoke)
         
         if tickets_response.tickets:
             for ticket in tickets_response.tickets:

@@ -42,57 +42,52 @@ manager = ConnectionManager()
 # Global state for tickets
 current_tickets: Dict[str, Any] = {}
 
-# Mock ticket data
-MOCK_TICKETS = [
-    {
-        "id": "TKT-IAM-001",
-        "title": "Access Request for Finance Application",
-        "description": "User needs access to the finance application for quarterly reporting",
-        "customer": "John Smith",
-        "priority": "high",
-        "createdAt": "2025-11-29 09:00 AM",
-        "category": "IAM",
-        "slaDeadline": "2025-12-01",
-        "aitNumber": "AIT-12345",
-        "applicationName": "Finance Portal",
-        "armId": "ARM-001",
-        "lobOwner": "finance@company.com",
-        "aitOwner": "it@company.com",
-        "contacts": ["john.smith@company.com", "manager@company.com"]
-    },
-    {
-        "id": "TKT-IAM-002",
-        "title": "Role Modification for HR System",
-        "description": "Update user roles and permissions in the HR management system",
-        "customer": "Emily Davis",
-        "priority": "urgent",
-        "createdAt": "2025-11-29 08:15 AM",
-        "category": "IAM",
-        "slaDeadline": "2025-11-30",
-        "aitNumber": "AIT-12346",
-        "applicationName": "HR Portal",
-        "armId": "ARM-002",
-        "lobOwner": "hr@company.com",
-        "aitOwner": "it@company.com",
-        "contacts": ["emily.davis@company.com", "hr-manager@company.com"]
-    },
-    {
-        "id": "TKT-IAM-003",
-        "title": "Deactivate User Account - Employee Departure",
-        "description": "Remove access for departing employee and archive data",
-        "customer": "Robert Wilson",
-        "priority": "medium",
-        "createdAt": "2025-11-28 14:20 PM",
-        "category": "IAM",
-        "slaDeadline": "2025-12-02",
-        "aitNumber": "AIT-12347",
-        "applicationName": "Corporate Systems",
-        "armId": "ARM-003",
-        "lobOwner": "operations@company.com",
-        "aitOwner": "it@company.com",
-        "contacts": ["robert.wilson@company.com", "ops-manager@company.com"]
-    }
-]
+# Load tickets from JSON file (same as real mode)
+def load_tickets_from_json():
+    """Load tickets from ticket_data.json and apphq_data.json"""
+    try:
+        # Load ticket data
+        with open("resources/ticket_data.json", "r") as f:
+            tickets = json.load(f)
+        
+        # Load AppHQ data
+        with open("resources/apphq_data.json", "r") as f:
+            apphq_data = json.load(f)
+        
+        # Convert to frontend format
+        frontend_tickets = []
+        for ticket in tickets:
+            # Find matching AppHQ data by ait_number
+            apphq_info = next((app for app in apphq_data if app.get("ait_number") == ticket.get("ait_number")), {})
+            
+            # Convert to frontend format
+            frontend_ticket = {
+                "id": ticket.get("ticket_id", "UNKNOWN"),
+                "title": f"{ticket.get('deliverableType', 'IAM')} - {ticket.get('description', '')[:50]}...",
+                "description": ticket.get("description", ""),
+                "customer": apphq_info.get("lob_owner", "Unknown"),
+                "priority": ticket.get("risk_level", "medium").lower(),
+                "createdAt": ticket.get("created_on", "2025-11-10"),
+                "category": ticket.get("category", "IAM"),
+                "slaDeadline": ticket.get("sla_deadline", "2025-12-01"),
+                "aitNumber": ticket.get("ait_number", ""),
+                "applicationName": apphq_info.get("application_name", "Unknown Application"),
+                "armId": ticket.get("arm_id", ""),
+                "lobOwner": apphq_info.get("lob_owner", ""),
+                "aitOwner": apphq_info.get("ait_owner", ""),
+                "contacts": apphq_info.get("contacts", [])
+            }
+            frontend_tickets.append(frontend_ticket)
+        
+        return frontend_tickets
+    except Exception as e:
+        print(f"Error loading tickets from JSON: {e}")
+        # Fallback to empty list
+        return []
+
+# Load tickets at startup
+MOCK_TICKETS = load_tickets_from_json()
+
 
 def create_ticket_with_stages(mock_ticket):
     """Create a ticket object with stage information"""

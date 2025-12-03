@@ -1,18 +1,28 @@
 [
   {
     "ait_number": "AIT-9001",
+    "arm_id": "ARM-7788",
     "application_name": "Finance Portal",
     "application_owner": "alice@example.com",
     "ait_owner": "bob@example.com",
     "lob_owner": "carol@example.com",
-    "contacts": ["alice@example.com", "bob@example.com", "carol@example.com"]
+    "contacts": [
+      "alice@example.com",
+      "bob@example.com",
+      "carol@example.com"
+    ]
   },
   {
-    "ait_number": "AIT-7788",
+    "ait_number": "AIT-9002",
+    "arm_id": "ARM-7789",
     "application_name": "HR System",
     "application_owner": "david@example.com",
     "ait_owner": "eva@example.com",
     "lob_owner": "frank@example.com",
-    "contacts": ["david@example.com", "eva@example.com", "frank@example.com"]
+    "contacts": [
+      "david@example.com",
+      "eva@example.com",
+      "frank@example.com"
+    ]
   }
 ]
